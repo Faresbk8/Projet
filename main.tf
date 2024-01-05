@@ -71,15 +71,47 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
-resource "aws_instance" "my_instance" {
+resource "aws_instance" "my_instance1" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   subnet_id              = aws_subnet.my_subnet.id
   vpc_security_group_ids = [aws_security_group.my_sg.id]
   tags = {
-    Name = "MonInstanceEC2"
+    Name = "Mon_Instance1"
   }
 }
+resource "aws_instance" "my_instance2" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  subnet_id              = aws_subnet.my_subnet.id
+  vpc_security_group_ids = [aws_security_group.my_sg.id]
+  tags = {
+    Name = "Mon_Instance2"
+  }
+}
+
+resource "aws_elb" "my_elb" {
+  name = "my-elb"
+
+  listener {
+    instance_port     = 80
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    target              = "HTTP:80/"
+    interval            = 30
+  }
+
+  subnets   = [aws_subnet.my_subnet.id]
+  instances = [aws_instance.my_instance1.id, aws_instance.my_instance2.id]
+}
+
 
 
 resource "aws_db_instance" "default" {
@@ -93,4 +125,3 @@ resource "aws_db_instance" "default" {
   parameter_group_name = "default.mysql5.7"
   skip_final_snapshot  = true
 }
-
